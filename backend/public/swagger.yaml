@@ -1,0 +1,241 @@
+openapi: 3.0.0
+info:
+  title: Car Management API
+  version: 1.0.0
+  description: API documentation for the Car Management Application
+servers:
+  - url: http://localhost:5050
+    description: Local server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: The user's unique username
+        password:
+          type: string
+          description: The user's password
+
+    Car:
+      type: object
+      required:
+        - title
+        - description
+        - tags
+        - images
+      properties:
+        title:
+          type: string
+          description: The car's title
+        description:
+          type: string
+          description: Detailed description of the car
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags describing the car
+        images:
+          type: array
+          items:
+            type: string
+          description: URLs for car images
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/users/signup:
+    post:
+      summary: Register a new user
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+              example:
+                username: 'john.doe@example.com'
+                password: 'password123'
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Username already exists
+        '500':
+          description: Server error
+
+
+  /api/users/login:
+    post:
+      summary: Log in a user
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Successful login
+        '400':
+          description: Invalid username or password
+        '500':
+          description: Server error
+
+  /api/cars:
+    post:
+      summary: Create a new car
+      tags:
+        - Car
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Car created successfully
+        '500':
+          description: Server error
+
+    get:
+      summary: Get a list of cars created by the user
+      tags:
+        - Car
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of cars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Car'
+        '500':
+          description: Server error
+
+  /api/cars/{id}:
+    get:
+      summary: Get details of a specific car
+      tags:
+        - Car
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the car
+      responses:
+        '200':
+          description: Car details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '404':
+          description: Car not found
+        '500':
+          description: Server error
+
+    patch:
+      summary: Partially update a car
+      tags:
+        - Car
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the car to update
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: The car's title
+                description:
+                  type: string
+                  description: Detailed description of the car
+                tags:
+                  type: string
+                  description: Comma-separated tags describing the car
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Image files for the car
+              example:
+                title: "Updated Car Title"
+      responses:
+        '200':
+          description: Car updated successfully
+        '404':
+          description: Car not found
+        '500':
+          description: Server error
+
+    delete:
+      summary: Delete a car
+      tags:
+        - Car
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the car to delete
+      responses:
+        '204':
+          description: Car deleted successfully
+        '404':
+          description: Car not found
+        '500':
+          description: Server error
