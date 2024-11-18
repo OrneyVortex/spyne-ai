@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Key } from "react";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
 import * as Yup from "yup";
@@ -68,7 +68,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
       fetchCarData();
     } else {
       // For new car entries, generate a unique ID
-      setInitialValues((prevValues) => ({
+      setInitialValues((prevValues: any) => ({
         ...prevValues,
         id: uuidv4(),
       }));
@@ -199,7 +199,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   render={(arrayHelpers) => (
                     <div>
                       {values.tags && values.tags.length > 0
-                        ? values.tags.map((tag, index) => (
+                        ? values.tags.map((tag: any, index: number) => (
                             <div key={index} className="flex items-center mb-2">
                               <Field
                                 name={`tags.${index}`}
@@ -245,11 +245,11 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                 />
               </div>
               <div className="mb-4">
-                {values.images.map((image, index) => (
+                {values.images.map((image: string | undefined, index: Key | null | undefined) => (
                   <img
                     key={index}
                     src={image}
-                    alt={`Car image ${index + 1}`}
+                    alt={`Car image ${(index as number) + 1}`}
                     className="w-24 h-24 object-cover rounded mr-2 mb-2 inline-block"
                   />
                 ))}
