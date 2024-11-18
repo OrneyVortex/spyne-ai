@@ -1,28 +1,76 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { mockCars, Car } from '../../../lib/mock-data'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function CarDetails({ params }: { params: { id: string } }) {
-  const [car, setCar] = useState<Car | null>(null)
-  const router = useRouter()
+  interface Car {
+    title: string;
+    description: string;
+    tags?: string[];
+    owner?: {
+      name: string;
+      email: string;
+    };
+    images?: string[];
+    id: string;
+  }
+
+  const [car, setCar] = useState<Car | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const foundCar = mockCars.find(c => c.id === params.id)
-    setCar(foundCar || null)
-  }, [params.id])
+    const fetchCarDetails = async () => {
+      try {
+        const response = await fetch(`https://spyne-ai-backend-production.up.railway.app/api/cars/${params.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${Cookie.get('accessToken')}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-  const handleDelete = () => {
-    // In a real application, you would make an API call here
-    // For now, we'll just redirect to the dashboard
-    router.push('/')
-  }
+        if (!response.ok) {
+          throw new Error('Car not found');
+        }
 
-  if (!car) {
-    return <div>Loading...</div>
-  }
+        const data = await response.json();
+        setCar(data);
+      } catch (error) {
+        console.error('Error fetching car details:', error);
+        router.push('/'); // Redirect to dashboard if car is not found
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCarDetails();
+  }, [params.id, router]);
+
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`https://spyne-ai-backend-production.up.railway.app/api/cars/${params.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${Cookie.get('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete the car');
+      }
+
+      router.push('/'); // Redirect to the dashboard after deletion
+    } catch (error) {
+      console.error('Error deleting car:', error);
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!car) return <div>Car not found</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -30,19 +78,27 @@ export default function CarDetails({ params }: { params: { id: string } }) {
       <div className="mb-4">
         <p className="text-lg mb-2">{car.description}</p>
         <div className="mb-2">
-          {car.tags.map((tag) => (
-            <span key={tag} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-              {tag}
+          {car.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
+            >
+              {tag.replace(/[\[\]"]/g, '')}
             </span>
           ))}
         </div>
         <p className="text-sm text-gray-500">
-          Owner: {car.owner.name} ({car.owner.email})
+          Owner: {car.owner?.name || 'unknown'} ({car.owner?.email || 'unknown'})
         </p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-        {car.images.map((image, index) => (
-          <img key={index} src={image} alt={`Car image ${index + 1}`} className="w-full h-48 object-cover rounded" />
+        {car.images?.map((image, index) => (
+          <img
+            key={index}
+            src={image}
+            alt={`Car image ${index + 1}`}
+            className="w-full h-48 object-cover rounded"
+          />
         ))}
       </div>
       <div className="flex space-x-4">
@@ -64,5 +120,5 @@ export default function CarDetails({ params }: { params: { id: string } }) {
         </Link>
       </div>
     </div>
-  )
+  );
 }
