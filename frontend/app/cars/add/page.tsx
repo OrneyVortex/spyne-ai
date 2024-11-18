@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
 import * as Yup from "yup";
 import Cookie from "js-cookie";
+import { v4 as uuidv4 } from "uuid"; // For generating unique IDs
 
 const CarSchema = Yup.object().shape({
   title: Yup.string()
@@ -14,12 +15,11 @@ const CarSchema = Yup.object().shape({
     .min(10, "Description must be at least 10 characters")
     .required("Required"),
   tags: Yup.array().of(Yup.string()).min(1, "At least one tag is required"),
-  // Owner validation is assumed to be added but is not part of your required data to send
 });
 
 export default function CarForm({ params }: { params?: { id: string } }) {
   const [initialValues, setInitialValues] = useState<any>({
-    id: "",
+    id: "", // Initially set to empty, we'll handle it based on the data fetched
     title: "",
     description: "",
     tags: [],
@@ -29,6 +29,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
 
   useEffect(() => {
     if (params?.id) {
+      // Fetch data for editing an existing car
       const fetchCarData = async () => {
         try {
           const token = Cookie.get("accessToken");
@@ -53,13 +54,24 @@ export default function CarForm({ params }: { params?: { id: string } }) {
           }
 
           const carData = await response.json();
-          setInitialValues(carData);
+
+          // Ensure the data includes an ID
+          setInitialValues({
+            ...carData,
+            id: carData.id || uuidv4(), // If no ID exists in the response, generate one
+          });
         } catch (error) {
           console.error("Error fetching car data:", error);
         }
       };
 
       fetchCarData();
+    } else {
+      // For new car entries, generate a unique ID
+      setInitialValues((prevValues) => ({
+        ...prevValues,
+        id: uuidv4(),
+      }));
     }
   }, [params?.id]);
 
@@ -71,6 +83,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
       const formData = new FormData();
 
       // Append normal fields
+      formData.append("id", values.id); // Include the ID in the form submission
       formData.append("title", values.title);
       formData.append("description", values.description);
 
@@ -140,6 +153,10 @@ export default function CarForm({ params }: { params?: { id: string } }) {
         >
           {({ isSubmitting, setFieldValue, values }) => (
             <Form className="max-w-lg">
+              {/* Car ID Field - Hidden */}
+              <Field type="hidden" name="id" value={values.id} />
+
+              {/* Other Fields (Title, Description, Tags, etc.) */}
               <div className="mb-4">
                 <label htmlFor="title" className="block mb-1">
                   Title
@@ -237,18 +254,15 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   />
                 ))}
               </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-4 py-2 w-full bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {isSubmitting
-                  ? "Submitting..."
-                  : params?.id
-                  ? "Update Car"
-                  : "Add Car"}
-              </button>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  {isSubmitting ? "Submitting..." : params?.id ? "Update" : "Submit"}
+                </button>
+              </div>
             </Form>
           )}
         </Formik>

@@ -7,10 +7,10 @@ import Cookie from 'js-cookie';
 import type { Car } from '../lib/mock-data';
 
 export default function Dashboard() {
-  const [cars, setCars] = useState<Car[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [cars, setCars] = useState<Car[]>([]) // Initialize with an empty array
+  const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const token = Cookie.get('accessToken');
@@ -31,28 +31,29 @@ export default function Dashboard() {
             throw new Error('Failed to fetch car data');
           }
 
-          const data = await response.json();
+          const data = await response.json()
           console.log(data);
-          setCars(data);
+          setCars(data) // Set the fetched cars data to the state
         } catch (error) {
           console.error('Error fetching car data:', error);
         } finally {
           setLoading(false);
         }
-      };
+      }
 
-      fetchCars();
+      fetchCars() // Call the async function to fetch the data
+      
     }
-  }, [router]);
+  }, [router]) // Dependency array ensures this runs only once on initial render
 
   const handleSearch = () => {
-    const filteredCars = cars.filter((car) =>
+    const filteredCars = cars.filter(car =>
       car.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       car.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      car.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-    setCars(filteredCars);
-  };
+      car.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+    setCars(filteredCars)
+  }
 
   if (loading) return <p>Loading...</p>;
 
@@ -64,15 +65,9 @@ export default function Dashboard() {
           type="text"
           placeholder="Search cars..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange} // Real-time search filtering
           className="flex-grow px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
         />
-        <button
-          onClick={handleSearch}
-          className="px-4 py-2 bg-slate-700 text-white rounded-md hover:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-500"
-        >
-          Search
-        </button>
       </div>
       <Link href="/cars/add">
         <button className="mb-4 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-md hover:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
@@ -85,20 +80,15 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold mb-2">{car.title}</h2>
             <p className="mb-2">{car.description}</p>
             <div className="mb-2">
-              {car.tags && car.tags.length > 0
-                ? car.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
-                    >
-                      {tag.replace(/[\[\]"]/g, '')} {/* Removes unwanted characters */}
-                    </span>
-                  ))
-                : 'No tags available'}
+              {car.tags.map((tag) => (
+                <span key={tag} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
+                  {tag}
+                </span>
+              ))}
             </div>
-            <p className="text-sm text-gray-500">
-              Owner: {car.owner?.name || 'unknown'} ({car.owner?.email || 'unknown'})
-            </p>
+            {/* <p className="text-sm text-gray-500">
+              Owner: {car.owner.name} ({car.owner.email})
+            </p> */}
             <Link href={`/cars/${car.id}`}>
               <button className="px-2 py-1 my-2 text-sm bg-slate-700 dark:bg-slate-300 dark:text-black text-white rounded-md hover:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
                 View Details
