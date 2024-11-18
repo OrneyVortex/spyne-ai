@@ -55,7 +55,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
 
 // Get Car Details
 router.get("/:_id", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const car = await Car.findOne({ _id: req.params.id, user: req.userId });
+  const car = await Car.findOne({ _id: req.params._id, user: req.userId });
   if (!car) res.status(404).send("Car not found");
   res.send(car);
 });
@@ -73,7 +73,7 @@ router.patch(
         : [];
 
       const updatedCar = await Car.findOneAndUpdate(
-        { _id: req.params.id, user: req.userId },
+        { _id: req.params._id, user: req.userId },
         { title, description, tags: tags ? tags.split(",") : [], images, username },
         { new: true }
       );
@@ -91,7 +91,7 @@ router.delete(
   "/:id",
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
-    await Car.deleteOne({ _id: req.params.id, user: req.userId });
+    await Car.deleteOne({ _id: req.params._id, user: req.userId });
     res.status(204).send();
   }
 );
