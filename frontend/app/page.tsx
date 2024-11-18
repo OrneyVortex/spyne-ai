@@ -1,64 +1,60 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import Cookie from 'js-cookie'
-import type { Car } from '../lib/mock-data'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Cookie from 'js-cookie';
+import type { Car } from '../lib/mock-data';
 
 export default function Dashboard() {
-  const [cars, setCars] = useState<Car[]>([]) // Initialize with an empty array
-  const [searchQuery, setSearchQuery] = useState('')
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [cars, setCars] = useState<Car[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    // Check if the accessToken exists in cookies
-    const token = Cookie.get('accessToken')
+    const token = Cookie.get('accessToken');
     if (!token) {
-      // If token is not present, redirect to login page
-      router.push('/login')
+      router.push('/login');
     } else {
-      // If token is present, fetch the cars data
       const fetchCars = async () => {
         try {
           const response = await fetch('https://spyne-ai-backend-production.up.railway.app/api/cars', {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${token}`, // Explicitly include the accessToken in the Authorization header
+              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
-          })
+          });
 
           if (!response.ok) {
-            throw new Error('Failed to fetch car data')
+            throw new Error('Failed to fetch car data');
           }
 
-          const data = await response.json()
+          const data = await response.json();
           console.log(data);
-          setCars(data) // Set the fetched cars data to the state
+          setCars(data);
         } catch (error) {
-          console.error('Error fetching car data:', error)
+          console.error('Error fetching car data:', error);
         } finally {
-          setLoading(false) // Stop loading after the data is fetched
+          setLoading(false);
         }
-      }
+      };
 
-      fetchCars() // Call the async function to fetch the data
-      
+      fetchCars();
     }
-  }, [router]) // Dependency array ensures this runs only once on initial render
+  }, [router]);
 
   const handleSearch = () => {
-    const filteredCars = cars.filter(car =>
+    const filteredCars = cars.filter((car) =>
       car.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       car.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      car.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-    setCars(filteredCars)
-  }
+      car.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+    setCars(filteredCars);
+  };
 
-  if (loading) return <p>Loading...</p> // Show loading while fetching
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -89,15 +85,20 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold mb-2">{car.title}</h2>
             <p className="mb-2">{car.description}</p>
             <div className="mb-2">
-              {car.tags.map((tag) => (
-                <span key={tag} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-                  {tag}
-                </span>
-              ))}
+              {car.tags && car.tags.length > 0
+                ? car.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
+                    >
+                      {tag.replace(/[\[\]"]/g, '')} {/* Removes unwanted characters */}
+                    </span>
+                  ))
+                : 'No tags available'}
             </div>
-            {/* <p className="text-sm text-gray-500">
-              Owner: {car.owner.name} ({car.owner.email})
-            </p> */}
+            <p className="text-sm text-gray-500">
+              Owner: {car.owner?.name || 'unknown'} ({car.owner?.email || 'unknown'})
+            </p>
             <Link href={`/cars/${car.id}`}>
               <button className="px-2 py-1 my-2 text-sm bg-slate-700 dark:bg-slate-300 dark:text-black text-white rounded-md hover:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
                 View Details
@@ -107,5 +108,5 @@ export default function Dashboard() {
         ))}
       </div>
     </div>
-  )
+  );
 }
