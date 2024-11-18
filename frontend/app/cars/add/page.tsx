@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Key } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
 import * as Yup from "yup";
@@ -19,63 +19,60 @@ const CarSchema = Yup.object().shape({
 
 export default function CarForm({ params }: { params?: { id: string } }) {
   const [initialValues, setInitialValues] = useState<any>({
-    id: "",
+    id: "", // Initially set to empty, we'll handle it based on the data fetched
     title: "",
     description: "",
     tags: [],
     images: [],
-    username: "", // Initially empty, to be set automatically
   });
   const router = useRouter();
 
-  // Function to fetch the username from the backend using the token
-  const fetchUsername = async () => {
-    try {
-      const token = Cookie.get("accessToken");
-      if (!token) {
-        throw new Error("No access token found");
-      }
-
-      const response = await fetch("https://spyne-ai-backend-production.up.railway.app/api/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch username");
-      }
-
-      const data = await response.json();
-      return data.username; // Assuming the response has a 'username' field
-    } catch (error) {
-      console.error("Error fetching username:", error);
-      return null; // Return null if the username cannot be fetched
-    }
-  };
-
-  // Handle setting initial values, including fetching username
   useEffect(() => {
-    const initializeForm = async () => {
-      let username = "default_username"; // Fallback username
-      if (!params?.id) {
-        // For new car entries, generate a unique ID
-        setInitialValues((prevValues: any) => ({
-          ...prevValues,
-          id: uuidv4(),
-        }));
-      } else {
-        // If editing an existing car, fetch the username
-        username = await fetchUsername();
-      }
+    if (params?.id) {
+      // Fetch data for editing an existing car
+      const fetchCarData = async () => {
+        try {
+          const token = Cookie.get("accessToken");
+          if (!token) {
+            console.error("No access token found");
+            return;
+          }
 
-      setInitialValues((prevValues:any) => ({
+          const response = await fetch(
+            `https://spyne-ai-backend-production.up.railway.app/api/cars/${params.id}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              credentials: "include",
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch car data");
+          }
+
+          const carData = await response.json();
+
+          // Ensure the data includes an ID
+          setInitialValues({
+            ...carData,
+            id: carData.id || uuidv4(), // If no ID exists in the response, generate one
+          });
+        } catch (error) {
+          console.error("Error fetching car data:", error);
+        }
+      };
+
+      fetchCarData();
+    } else {
+      // For new car entries, generate a unique ID
+      setInitialValues((prevValues) => ({
         ...prevValues,
-        username, // Automatically set username from the token
+        id: uuidv4(),
       }));
-    };
-
-    initializeForm();
+    }
   }, [params?.id]);
 
   const handleSubmit = async (
@@ -85,10 +82,10 @@ export default function CarForm({ params }: { params?: { id: string } }) {
     try {
       const formData = new FormData();
 
-      formData.append("id", values.id);
+      // Append normal fields
+      formData.append("id", values.id); // Include the ID in the form submission
       formData.append("title", values.title);
       formData.append("description", values.description);
-      formData.append("username", values.username);
 
       // Append tags as a JSON string
       formData.append("tags", JSON.stringify(values.tags));
@@ -159,9 +156,6 @@ export default function CarForm({ params }: { params?: { id: string } }) {
               {/* Car ID Field - Hidden */}
               <Field type="hidden" name="id" value={values.id} />
 
-              {/* Username Field - Hidden (set automatically) */}
-              <Field type="hidden" name="username" value={values.username} />
-
               {/* Other Fields (Title, Description, Tags, etc.) */}
               <div className="mb-4">
                 <label htmlFor="title" className="block mb-1">
@@ -205,7 +199,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   render={(arrayHelpers) => (
                     <div>
                       {values.tags && values.tags.length > 0
-                        ? values.tags.map((tag: any, index: number) => (
+                        ? values.tags.map((tag, index) => (
                             <div key={index} className="flex items-center mb-2">
                               <Field
                                 name={`tags.${index}`}
@@ -251,22 +245,22 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                 />
               </div>
               <div className="mb-4">
-                {values.images.map((image: string | undefined, index: Key | null | undefined) => (
+                {values.images.map((image, index) => (
                   <img
                     key={index}
                     src={image}
-                    alt={`Car image ${(index as number) + 1}`}
-                    className="w-32 h-32 object-cover mb-2"
+                    alt={`Car image ${index + 1}`}
+                    className="w-24 h-24 object-cover rounded mr-2 mb-2 inline-block"
                   />
                 ))}
               </div>
-              <div className="flex justify-center">
+              <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="w-full py-2 px-4 bg-black dark:bg-white dark:text-black text-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
                   disabled={isSubmitting}
+                  className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
-                  {isSubmitting ? "Submitting..." : "Submit"}
+                  {isSubmitting ? "Submitting..." : params?.id ? "Update" : "Submit"}
                 </button>
               </div>
             </Form>

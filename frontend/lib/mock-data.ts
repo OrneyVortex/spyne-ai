@@ -2,15 +2,13 @@ import Cookie from 'js-cookie'
 
 // Define the Car interface
 export interface Car {
-  id: string
+  _id: string
   title: string
   description: string
   images: string[]
   tags: string[]
-  owner: {
-    name: string
-    email: string
-  }
+  user: string
+  
 }
 
 // Function to fetch cars data from the backend API
