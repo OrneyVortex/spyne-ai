@@ -88,7 +88,7 @@ router.patch(
 
 // Delete Car
 router.delete(
-  "/:id",
+  "/:_id",
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     await Car.deleteOne({ _id: req.params._id, user: req.userId });

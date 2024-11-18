@@ -10,12 +10,9 @@ export default function CarDetails({ params }: { params: { id: string } }) {
     title: string;
     description: string;
     tags?: string[];
-    owner?: {
-      name: string;
-      email: string;
-    };
+
     images?: string[];
-    id: string;
+    _id: string;
   }
 
   const [car, setCar] = useState<Car | null>(null);
@@ -88,9 +85,9 @@ export default function CarDetails({ params }: { params: { id: string } }) {
             </span>
           ))}
         </div>
-        <p className="text-sm text-gray-500">
-          Owner: {car.owner?.name || 'unknown'} ({car.owner?.email || 'unknown'})
-        </p>
+        {/* <p className="text-sm text-gray-500">
+          Owner: {car.user?.name || 'unknown'} ({car.owner?.email || 'unknown'})
+        </p> */}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
         {car.images?.map((image, index) => (
