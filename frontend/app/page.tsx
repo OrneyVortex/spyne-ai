@@ -60,7 +60,18 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Car Dealership Dashboard</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Car Dealership Dashboard</h1>
+        <a
+          href="https://spyne-ai-backend-production.up.railway.app/api/docs/swagger.json"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400"
+        >
+          GO TO SWAGGER API
+        </a>
+      </div>
+      
       <div className="mb-4 flex gap-2">
         <input
           type="text"
