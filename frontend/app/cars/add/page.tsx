@@ -29,10 +29,37 @@ export default function CarForm({ params }: { params?: { id: string } }) {
 
   useEffect(() => {
     if (params?.id) {
-      const foundCar = mockCars.find((c) => c.id === params.id);
-      if (foundCar) {
-        setInitialValues(foundCar);
-      }
+      const fetchCarData = async () => {
+        try {
+          const token = Cookie.get("accessToken");
+          if (!token) {
+            console.error("No access token found");
+            return;
+          }
+
+          const response = await fetch(
+            `https://spyne-ai-backend-production.up.railway.app/api/cars/${params.id}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              credentials: "include",
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch car data");
+          }
+
+          const carData = await response.json();
+          setInitialValues(carData);
+        } catch (error) {
+          console.error("Error fetching car data:", error);
+        }
+      };
+
+      fetchCarData();
     }
   }, [params?.id]);
 
@@ -53,11 +80,11 @@ export default function CarForm({ params }: { params?: { id: string } }) {
       // Append images (files)
       if (values.images) {
         values.images.forEach((image: any) => {
-          formData.append("images", image); // Each file must be appended as an individual item
+          formData.append("images", image);
         });
       }
 
-      const token = Cookie.get("accessToken"); // Get the accessToken from the cookie
+      const token = Cookie.get("accessToken");
       if (!token) {
         throw new Error("No access token found");
       }
@@ -65,12 +92,12 @@ export default function CarForm({ params }: { params?: { id: string } }) {
       const response = await fetch(
         "https://spyne-ai-backend-production.up.railway.app/api/cars",
         {
-          method: params?.id ? "PUT" : "POST", // Use PUT for update if there's an id
+          method: params?.id ? "PUT" : "POST",
           headers: {
-            Authorization: `Bearer ${token}`, // Sending token for authorization
+            Authorization: `Bearer ${token}`,
           },
           body: formData,
-          credentials: "include", // This will send the cookie along with the request
+          credentials: "include",
         }
       );
 
@@ -201,7 +228,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                 />
               </div>
               <div className="mb-4">
-                {values.images.map((images, index) => (
+                {values.images.map((image, index) => (
                   <img
                     key={index}
                     src={image}
