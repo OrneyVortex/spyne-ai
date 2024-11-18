@@ -7,11 +7,10 @@ const router = Router();
 interface AuthRequest extends Request {
   userId?: string;
 }
-
 // Create Car
 router.post(
   "/",
-  authMiddleware, // Keep this so only authenticated users can create cars
+  authMiddleware,
   upload.array("images", 10),
   async (req: AuthRequest, res: Response) => {
     try {
@@ -21,7 +20,7 @@ router.post(
         : [];
 
       const car = new Car({
-        user: req.userId, // Associate car with the authenticated user
+        user: req.userId,
         title,
         description,
         tags: tags ? tags.split(",") : [],
@@ -32,38 +31,29 @@ router.post(
       res.status(201).json(car);
     } catch (error) {
       console.log(error);
+      
       res.status(500).json({ error: "Server error" });
     }
   }
 );
 
-// List Cars - Make all cars visible to everyone (remove user-based filtering)
-router.get("/", async (req: Request, res: Response) => {
-  try {
-    const cars = await Car.find(); // No user filter, making it public
-    res.json(cars);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Server error" });
-  }
+// List Cars
+router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
+  const cars = await Car.find({ user: req.userId });
+  res.send(cars);
 });
 
-// Get Car Details - Make car details visible to everyone (remove user-based filtering)
-router.get("/:id", async (req: Request, res: Response) => {
-  try {
-    const car = await Car.findOne({ _id: req.params.id }); // No user filter, just by car ID
-    if (!car) return res.status(404).send("Car not found");
-    res.json(car);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Server error" });
-  }
+// Get Car Details
+router.get("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+  const car = await Car.findOne({ _id: req.params.id, user: req.userId });
+  if (!car) res.status(404).send("Car not found");
+  res.send(car);
 });
 
-// Update Car - Restrict to the owner of the car (same logic as before)
+// Update Car
 router.patch(
   "/:id",
-  authMiddleware, // Ensure that only authenticated users can update their own car
+  authMiddleware,
   upload.array("images", 10),
   async (req: AuthRequest, res: Response) => {
     try {
@@ -73,33 +63,26 @@ router.patch(
         : [];
 
       const updatedCar = await Car.findOneAndUpdate(
-        { _id: req.params.id, user: req.userId }, // Ensure the owner can update only their own car
+        { _id: req.params.id, user: req.userId },
         { title, description, tags: tags ? tags.split(",") : [], images },
         { new: true }
       );
 
-      if (!updatedCar) return res.status(404).json({ error: "Car not found" });
+      if (!updatedCar) res.status(404).json({ error: "Car not found" });
       res.json(updatedCar);
     } catch (error) {
-      console.log(error);
       res.status(500).json({ error: "Server error" });
     }
   }
 );
 
-// Delete Car - Restrict to the owner of the car (same logic as before)
+// Delete Car
 router.delete(
   "/:id",
-  authMiddleware, // Ensure that only authenticated users can delete their own car
+  authMiddleware,
   async (req: AuthRequest, res: Response) => {
-    try {
-      const deletedCar = await Car.deleteOne({ _id: req.params.id, user: req.userId }); // Ensure the owner can delete only their own car
-      if (!deletedCar.deletedCount) return res.status(404).send("Car not found");
-      res.status(204).send();
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ error: "Server error" });
-    }
+    await Car.deleteOne({ _id: req.params.id, user: req.userId });
+    res.status(204).send();
   }
 );
 
