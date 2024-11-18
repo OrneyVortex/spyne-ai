@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
 import * as Yup from "yup";
-import { mockCars, Car } from "../../../lib/mock-data";
+import Cookie from "js-cookie";
 
 const CarSchema = Yup.object().shape({
   title: Yup.string()
@@ -14,12 +14,7 @@ const CarSchema = Yup.object().shape({
     .min(10, "Description must be at least 10 characters")
     .required("Required"),
   tags: Yup.array().of(Yup.string()).min(1, "At least one tag is required"),
-  owner: Yup.object().shape({
-    name: Yup.string().required("Owner name is required"),
-    email: Yup.string()
-      .email("Invalid email")
-      .required("Owner email is required"),
-  }),
+  // Owner validation is assumed to be added but is not part of your required data to send
 });
 
 export default function CarForm({ params }: { params?: { id: string } }) {
@@ -27,8 +22,8 @@ export default function CarForm({ params }: { params?: { id: string } }) {
     id: "",
     title: "",
     description: "",
-    images: [],
     tags: [],
+    images: [],
   });
   const router = useRouter();
 
@@ -41,16 +36,54 @@ export default function CarForm({ params }: { params?: { id: string } }) {
     }
   }, [params?.id]);
 
-  const handleSubmit = (
-    values: Car,
+  const handleSubmit = async (
+    values: any,
     { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }
   ) => {
-    // In a real application, you would make an API call here
-    setTimeout(() => {
-      console.log(values);
+    try {
+      const formData = new FormData();
+
+      // Append normal fields
+      formData.append("title", values.title);
+      formData.append("description", values.description);
+
+      // Append tags as a JSON string
+      formData.append("tags", JSON.stringify(values.tags));
+
+      // Append images (files)
+      if (values.images) {
+        values.images.forEach((image: any) => {
+          formData.append("images", image); // Each file must be appended as an individual item
+        });
+      }
+
+      const token = Cookie.get("accessToken"); // Get the accessToken from the cookie
+      if (!token) {
+        throw new Error("No access token found");
+      }
+
+      const response = await fetch(
+        "https://spyne-ai-backend-production.up.railway.app/api/cars",
+        {
+          method: params?.id ? "PUT" : "POST", // Use PUT for update if there's an id
+          headers: {
+            Authorization: `Bearer ${token}`, // Sending token for authorization
+          },
+          body: formData,
+          credentials: "include", // This will send the cookie along with the request
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to submit car data");
+      }
+
       setSubmitting(false);
       router.push("/");
-    }, 1000);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setSubmitting(false);
+    }
   };
 
   const handleImageUpload = (
@@ -168,7 +201,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                 />
               </div>
               <div className="mb-4">
-                {values.images.map((image, index) => (
+                {values.images.map((images, index) => (
                   <img
                     key={index}
                     src={image}

@@ -1,59 +1,45 @@
+import Cookie from 'js-cookie'
+
+// Define the Car interface
 export interface Car {
-    id: string
-    title: string
-    description: string
-    images: string[]
-    tags: string[]
-    owner: {
-      name: string
-      email: string
-    }
+  id: string
+  title: string
+  description: string
+  images: string[]
+  tags: string[]
+  owner: {
+    name: string
+    email: string
   }
-  
-  export const mockCars: Car[] = [
-    {
-      id: '1',
-      title: '2022 Tesla Model 3',
-      description: 'Sleek electric sedan with impressive range and performance.',
-      images: [
-        '/placeholder.svg?height=300&width=400',
-        '/placeholder.svg?height=300&width=400',
-        '/placeholder.svg?height=300&width=400',
-      ],
-      tags: ['electric', 'sedan', 'tesla'],
-      owner: {
-        name: 'John Doe',
-        email: 'john@example.com',
+}
+
+// Function to fetch cars data from the backend API
+export const mockCars = async (): Promise<Car[]> => {
+  const token = Cookie.get('accessToken') // Get the access token from cookies
+
+  if (!token) {
+    console.error('Access token not found')
+    return []
+  }
+
+  try {
+    const response = await fetch('https://spyne-ai-backend-production.up.railway.app/api/cars', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`, // Attach the token in the Authorization header
+        'Content-Type': 'application/json',
       },
-    },
-    {
-      id: '2',
-      title: '2021 Ford Mustang GT',
-      description: 'Powerful muscle car with iconic design and thrilling performance.',
-      images: [
-        '/placeholder.svg?height=300&width=400',
-        '/placeholder.svg?height=300&width=400',
-      ],
-      tags: ['muscle', 'sports', 'ford'],
-      owner: {
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-      },
-    },
-    {
-      id: '3',
-      title: '2023 Toyota RAV4 Hybrid',
-      description: 'Efficient and spacious hybrid SUV for eco-conscious drivers.',
-      images: [
-        '/placeholder.svg?height=300&width=400',
-        '/placeholder.svg?height=300&width=400',
-        '/placeholder.svg?height=300&width=400',
-        '/placeholder.svg?height=300&width=400',
-      ],
-      tags: ['hybrid', 'suv', 'toyota'],
-      owner: {
-        name: 'Bob Johnson',
-        email: 'bob@example.com',
-      },
-    },
-  ]
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch car data')
+    }
+
+    const data = await response.json()
+    console.log('Car data:', data)
+    return data // Return the array of cars fetched from the API
+  } catch (error) {
+    console.error('Error fetching car data:', error)
+    return [] // Return an empty array in case of an error
+  }
+}

@@ -5,12 +5,10 @@ import Link from 'next/link'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import * as Yup from 'yup'
 
+// Yup schema for form validation
 const SignupSchema = Yup.object().shape({
-  name: Yup.string()
-    .min(2, 'Name must be at least 2 characters')
-    .required('Required'),
-  email: Yup.string()
-    .email('Invalid email')
+  username: Yup.string()
+    .min(2, 'Username must be at least 2 characters')
     .required('Required'),
   password: Yup.string()
     .min(8, 'Password must be at least 8 characters')
@@ -23,17 +21,41 @@ const SignupSchema = Yup.object().shape({
 export default function Signup() {
   const router = useRouter()
 
-  const handleSubmit = (values: { name: string; email: string; password: string }, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
-    // In a real application, you would make an API call here to register the user
-    setTimeout(() => {
-      console.log('User registered:', values)
+  // Handle form submission
+  const handleSubmit = async (
+    values: { username: string; password: string },
+    { setSubmitting, setErrors }: { setSubmitting: (isSubmitting: boolean) => void; setErrors: (errors: any) => void }
+  ) => {
+    try {
+      const response = await fetch('https://spyne-ai-backend-production.up.railway.app/api/users/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: values.username,
+          password: values.password,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        setErrors({ username: errorData.message || 'Something went wrong' })
+        return
+      }
+
+      // On successful signup, redirect to login page
       setSubmitting(false)
       router.push('/login')
-    }, 1000)
+    } catch (error) {
+      console.error('Error during signup:', error)
+      setErrors({ username: 'Error occurred while signing up. Please try again later.' })
+      setSubmitting(false)
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center  py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-50">
@@ -41,7 +63,7 @@ export default function Signup() {
           </h2>
         </div>
         <Formik
-          initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
+          initialValues={{ username: '', password: '', confirmPassword: '' }}
           validationSchema={SignupSchema}
           onSubmit={handleSubmit}
         >
@@ -49,33 +71,18 @@ export default function Signup() {
             <Form className="mt-8 space-y-6">
               <div className="rounded-md shadow-sm -space-y-px">
                 <div>
-                  <label htmlFor="name" className="sr-only">
-                    Full Name
+                  <label htmlFor="username" className="sr-only">
+                    Username
                   </label>
                   <Field
-                    id="name"
-                    name="name"
+                    id="username"
+                    name="username"
                     type="text"
                     required
                     className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:border-gray-900 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Full Name"
+                    placeholder="Username"
                   />
-                  <ErrorMessage name="name" component="div" className="text-red-500 text-xs mt-1" />
-                </div>
-                <div>
-                  <label htmlFor="email" className="sr-only">
-                    Email address
-                  </label>
-                  <Field
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:border-gray-900 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Email address"
-                  />
-                  <ErrorMessage name="email" component="div" className="text-red-500 text-xs mt-1" />
+                  <ErrorMessage name="username" component="div" className="text-red-500 text-xs mt-1" />
                 </div>
                 <div>
                   <label htmlFor="password" className="sr-only">

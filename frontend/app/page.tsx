@@ -1,21 +1,64 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { mockCars, Car } from '../lib/mock-data'
+import Cookie from 'js-cookie'
+import type { Car } from '../lib/mock-data'
 
 export default function Dashboard() {
-  const [cars, setCars] = useState<Car[]>(mockCars)
+  const [cars, setCars] = useState<Car[]>([]) // Initialize with an empty array
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+
+  useEffect(() => {
+    // Check if the accessToken exists in cookies
+    const token = Cookie.get('accessToken')
+    if (!token) {
+      // If token is not present, redirect to login page
+      router.push('/login')
+    } else {
+      // If token is present, fetch the cars data
+      const fetchCars = async () => {
+        try {
+          const response = await fetch('https://spyne-ai-backend-production.up.railway.app/api/cars', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`, // Explicitly include the accessToken in the Authorization header
+              'Content-Type': 'application/json',
+            },
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch car data')
+          }
+
+          const data = await response.json()
+          console.log(data);
+          setCars(data) // Set the fetched cars data to the state
+        } catch (error) {
+          console.error('Error fetching car data:', error)
+        } finally {
+          setLoading(false) // Stop loading after the data is fetched
+        }
+      }
+
+      fetchCars() // Call the async function to fetch the data
+      
+    }
+  }, [router]) // Dependency array ensures this runs only once on initial render
 
   const handleSearch = () => {
-    const filteredCars = mockCars.filter(car =>
+    const filteredCars = cars.filter(car =>
       car.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       car.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       car.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     setCars(filteredCars)
   }
+
+  if (loading) return <p>Loading...</p> // Show loading while fetching
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -26,7 +69,7 @@ export default function Dashboard() {
           placeholder="Search cars..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+          className="flex-grow px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
         />
         <button
           onClick={handleSearch}
@@ -52,9 +95,9 @@ export default function Dashboard() {
                 </span>
               ))}
             </div>
-            <p className="text-sm text-gray-500">
+            {/* <p className="text-sm text-gray-500">
               Owner: {car.owner.name} ({car.owner.email})
-            </p>
+            </p> */}
             <Link href={`/cars/${car.id}`}>
               <button className="px-2 py-1 my-2 text-sm bg-slate-700 dark:bg-slate-300 dark:text-black text-white rounded-md hover:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
                 View Details

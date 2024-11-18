@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import Cookie from "js-cookie";
 
 const LoginSchema = Yup.object().shape({
-  email: Yup.string().email("Invalid email").required("Required"),
+  username: Yup.string().required("Required"), // Change to username validation
   password: Yup.string()
     .min(8, "Password must be at least 8 characters")
     .required("Required"),
@@ -16,7 +17,7 @@ export default function Login() {
   const router = useRouter();
 
   const handleSubmit = (
-    values: { email: string; password: string },
+    values: { username: string; password: string }, // Changed to username
     {
       setSubmitting,
       setStatus,
@@ -25,13 +26,34 @@ export default function Login() {
       setStatus: (status: any) => void;
     }
   ) => {
-    fetch()
-    setTimeout(() => {
-      setStatus("Invalid email or password. Please try again.");
-      setSubmitting(false);
-      // If login is successful, you would redirect to the dashboard
-      // router.push('/')
-    }, 1000);
+    fetch("https://spyne-ai-backend-production.up.railway.app/api/users/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: values.username, // Send username instead of email
+        password: values.password,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.token) {
+          // Save token to cookies
+          Cookie.set("accessToken", data.token, { expires: 1 / 24 });
+          // Redirect to dashboard or another page
+          router.push("/");
+        } else {
+          setStatus("Invalid username or password. Please try again.");
+        }
+      })
+      .catch((error) => {
+        setStatus("An error occurred. Please try again.");
+        console.error("Login error:", error);
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
   };
 
   return (
@@ -43,11 +65,11 @@ export default function Login() {
           </h2>
         </div>
         <Formik
-          initialValues={{ email: "", password: "" }}
+          initialValues={{ username: "", password: "" }} // Changed to username
           validationSchema={LoginSchema}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting, status}) => (
+          {({ isSubmitting, status }) => (
             <Form className="mt-8 space-y-6">
               {status && (
                 <div className="rounded-md bg-red-50 p-4">
@@ -77,20 +99,20 @@ export default function Login() {
               )}
               <div className="rounded-md -space-y-px">
                 <div>
-                  <label htmlFor="email" className="sr-only">
-                    Email address
+                  <label htmlFor="username" className="sr-only">
+                    Username
                   </label>
                   <Field
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
+                    id="username"
+                    name="username" // Changed to username
+                    type="text"
+                    autoComplete="username"
                     required
                     className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:border-gray-900 dark:text-white placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Email address"
+                    placeholder="Username"
                   />
                   <ErrorMessage
-                    name="email"
+                    name="username"
                     component="div"
                     className="text-red-500 text-xs mt-1"
                   />
@@ -105,7 +127,7 @@ export default function Login() {
                     type="password"
                     autoComplete="current-password"
                     required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300  dark:bg-gray-800 dark:border-gray-900 dark:text-white placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:border-gray-900 dark:text-white placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                     placeholder="Password"
                   />
                   <ErrorMessage
