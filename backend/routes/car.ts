@@ -7,6 +7,7 @@ const router = Router();
 interface AuthRequest extends Request {
   userId?: string;
 }
+
 // Create Car
 router.post(
   "/",
@@ -14,7 +15,7 @@ router.post(
   upload.array("images", 10),
   async (req: AuthRequest, res: Response) => {
     try {
-      const { title, description, tags } = req.body;
+      const { title, description, tags, username } = req.body; // Get username from request body
       const images = req.files
         ? (req.files as Express.Multer.File[]).map((file) => file.path)
         : [];
@@ -25,13 +26,13 @@ router.post(
         description,
         tags: tags ? tags.split(",") : [],
         images, // Store image URLs from Cloudinary
+        username, // Store username with the car data
       });
 
       await car.save();
       res.status(201).json(car);
     } catch (error) {
       console.log(error);
-      
       res.status(500).json({ error: "Server error" });
     }
   }
@@ -57,14 +58,14 @@ router.patch(
   upload.array("images", 10),
   async (req: AuthRequest, res: Response) => {
     try {
-      const { title, description, tags } = req.body;
+      const { title, description, tags, username } = req.body;
       const images = req.files
         ? (req.files as Express.Multer.File[]).map((file) => file.path)
         : [];
 
       const updatedCar = await Car.findOneAndUpdate(
         { _id: req.params.id, user: req.userId },
-        { title, description, tags: tags ? tags.split(",") : [], images },
+        { title, description, tags: tags ? tags.split(",") : [], images, username },
         { new: true }
       );
 

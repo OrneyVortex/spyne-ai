@@ -19,60 +19,63 @@ const CarSchema = Yup.object().shape({
 
 export default function CarForm({ params }: { params?: { id: string } }) {
   const [initialValues, setInitialValues] = useState<any>({
-    id: "", // Initially set to empty, we'll handle it based on the data fetched
+    id: "",
     title: "",
     description: "",
     tags: [],
     images: [],
+    username: "", // Initially empty, to be set automatically
   });
   const router = useRouter();
 
+  // Function to fetch the username from the backend using the token
+  const fetchUsername = async () => {
+    try {
+      const token = Cookie.get("accessToken");
+      if (!token) {
+        throw new Error("No access token found");
+      }
+
+      const response = await fetch("https://spyne-ai-backend-production.up.railway.app/api/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch username");
+      }
+
+      const data = await response.json();
+      return data.username; // Assuming the response has a 'username' field
+    } catch (error) {
+      console.error("Error fetching username:", error);
+      return null; // Return null if the username cannot be fetched
+    }
+  };
+
+  // Handle setting initial values, including fetching username
   useEffect(() => {
-    if (params?.id) {
-      // Fetch data for editing an existing car
-      const fetchCarData = async () => {
-        try {
-          const token = Cookie.get("accessToken");
-          if (!token) {
-            console.error("No access token found");
-            return;
-          }
+    const initializeForm = async () => {
+      let username = "default_username"; // Fallback username
+      if (!params?.id) {
+        // For new car entries, generate a unique ID
+        setInitialValues((prevValues) => ({
+          ...prevValues,
+          id: uuidv4(),
+        }));
+      } else {
+        // If editing an existing car, fetch the username
+        username = await fetchUsername();
+      }
 
-          const response = await fetch(
-            `https://spyne-ai-backend-production.up.railway.app/api/cars/${params.id}`,
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              credentials: "include",
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to fetch car data");
-          }
-
-          const carData = await response.json();
-
-          // Ensure the data includes an ID
-          setInitialValues({
-            ...carData,
-            id: carData.id || uuidv4(), // If no ID exists in the response, generate one
-          });
-        } catch (error) {
-          console.error("Error fetching car data:", error);
-        }
-      };
-
-      fetchCarData();
-    } else {
-      // For new car entries, generate a unique ID
       setInitialValues((prevValues) => ({
         ...prevValues,
-        id: uuidv4(),
+        username, // Automatically set username from the token
       }));
-    }
+    };
+
+    initializeForm();
   }, [params?.id]);
 
   const handleSubmit = async (
@@ -82,10 +85,10 @@ export default function CarForm({ params }: { params?: { id: string } }) {
     try {
       const formData = new FormData();
 
-      // Append normal fields
-      formData.append("id", values.id); // Include the ID in the form submission
+      formData.append("id", values.id);
       formData.append("title", values.title);
       formData.append("description", values.description);
+      formData.append("username", values.username);
 
       // Append tags as a JSON string
       formData.append("tags", JSON.stringify(values.tags));
@@ -155,6 +158,9 @@ export default function CarForm({ params }: { params?: { id: string } }) {
             <Form className="max-w-lg">
               {/* Car ID Field - Hidden */}
               <Field type="hidden" name="id" value={values.id} />
+
+              {/* Username Field - Hidden (set automatically) */}
+              <Field type="hidden" name="username" value={values.username} />
 
               {/* Other Fields (Title, Description, Tags, etc.) */}
               <div className="mb-4">
@@ -250,17 +256,17 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                     key={index}
                     src={image}
                     alt={`Car image ${index + 1}`}
-                    className="w-24 h-24 object-cover rounded mr-2 mb-2 inline-block"
+                    className="w-32 h-32 object-cover mb-2"
                   />
                 ))}
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-center">
                 <button
                   type="submit"
+                  className="w-full py-2 px-4 bg-black dark:bg-white dark:text-black text-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
                   disabled={isSubmitting}
-                  className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
-                  {isSubmitting ? "Submitting..." : params?.id ? "Update" : "Submit"}
+                  {isSubmitting ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </Form>

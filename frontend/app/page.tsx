@@ -7,10 +7,11 @@ import Cookie from 'js-cookie';
 import type { Car } from '../lib/mock-data';
 
 export default function Dashboard() {
-  const [cars, setCars] = useState<Car[]>([]) // Initialize with an empty array
-  const [searchQuery, setSearchQuery] = useState('')
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [cars, setCars] = useState<Car[]>([]);
+  const [filteredCars, setFilteredCars] = useState<Car[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const token = Cookie.get('accessToken');
@@ -31,29 +32,29 @@ export default function Dashboard() {
             throw new Error('Failed to fetch car data');
           }
 
-          const data = await response.json()
+          const data = await response.json();
           console.log(data);
-          setCars(data) // Set the fetched cars data to the state
+          setCars(data);
+          setFilteredCars(data); // Set both the full list and filtered list
         } catch (error) {
           console.error('Error fetching car data:', error);
         } finally {
           setLoading(false);
         }
-      }
+      };
 
-      fetchCars() // Call the async function to fetch the data
-      
+      fetchCars();
     }
-  }, [router]) // Dependency array ensures this runs only once on initial render
+  }, [router]);
 
-  const handleSearch = () => {
-    const filteredCars = cars.filter(car =>
+  useEffect(() => {
+    const filtered = cars.filter((car) =>
       car.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       car.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      car.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-    setCars(filteredCars)
-  }
+      car.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+    setFilteredCars(filtered); // Update filtered cars based on search query
+  }, [searchQuery, cars]); // Run this whenever searchQuery or cars change
 
   if (loading) return <p>Loading...</p>;
 
@@ -65,7 +66,7 @@ export default function Dashboard() {
           type="text"
           placeholder="Search cars..."
           value={searchQuery}
-          onChange={handleSearchChange} // Real-time search filtering
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="flex-grow px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
         />
       </div>
@@ -75,20 +76,25 @@ export default function Dashboard() {
         </button>
       </Link>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cars.map((car) => (
+        {filteredCars.map((car) => (
           <Link href={`/cars/${car.id}`} key={car.id} className="border dark:border-gray-600 rounded-lg p-4 shadow-md dark:bg-gray-900">
             <h2 className="text-xl font-bold mb-2">{car.title}</h2>
             <p className="mb-2">{car.description}</p>
             <div className="mb-2">
-              {car.tags.map((tag) => (
-                <span key={tag} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-                  {tag}
-                </span>
-              ))}
+              {car.tags && car.tags.length > 0
+                ? car.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
+                    >
+                      {tag.replace(/[\[\]"]/g, '')} {/* Removes unwanted characters */}
+                    </span>
+                  ))
+                : 'No tags available'}
             </div>
-            {/* <p className="text-sm text-gray-500">
-              Owner: {car.owner.name} ({car.owner.email})
-            </p> */}
+            <p className="text-sm text-gray-500">
+              Owner: {car.owner?.username || 'Unknown'} {/* Display username */}
+            </p>
             <Link href={`/cars/${car.id}`}>
               <button className="px-2 py-1 my-2 text-sm bg-slate-700 dark:bg-slate-300 dark:text-black text-white rounded-md hover:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
                 View Details
