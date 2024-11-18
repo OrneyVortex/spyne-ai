@@ -39,10 +39,17 @@ router.post(
 );
 
 // List Cars
+// List Cars
 router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const cars = await Car.find({ user: req.userId });
-  res.send(cars);
+  try {
+    const cars = await Car.find(); 
+    res.send(cars);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
 });
+
 
 // Get Car Details
 router.get("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
