@@ -2,11 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
+import { Formik, Form, Field, ErrorMessage, FieldArray, FormikHelpers } from "formik";
 import * as Yup from "yup";
 import Cookie from "js-cookie";
-import { jwtDecode } from "jwt-decode"; // Import jwt-decode
+import {jwtDecode} from "jwt-decode"; // Import jwt-decode
 import { v4 as uuidv4 } from "uuid"; // For generating unique IDs
+
+interface CarValues {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  images: File[];
+}
 
 const CarSchema = Yup.object().shape({
   title: Yup.string()
@@ -18,8 +26,12 @@ const CarSchema = Yup.object().shape({
   tags: Yup.array().of(Yup.string()).min(1, "At least one tag is required"),
 });
 
-export default function CarForm({ params }: { params?: { id: string } }) {
-  const [initialValues, setInitialValues] = useState<any>({
+interface CarFormProps {
+  params?: { id: string };
+}
+
+export default function CarForm({ params }: CarFormProps) {
+  const [initialValues, setInitialValues] = useState<CarValues>({
     id: "",
     title: "",
     description: "",
@@ -58,7 +70,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
             throw new Error("Failed to fetch car data");
           }
 
-          const carData = await response.json();
+          const carData: CarValues = await response.json();
           setInitialValues({
             ...carData,
             id: carData.id || uuidv4(),
@@ -78,8 +90,8 @@ export default function CarForm({ params }: { params?: { id: string } }) {
   }, [params?.id]);
 
   const handleSubmit = async (
-    values: any,
-    { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }
+    values: CarValues,
+    { setSubmitting }: FormikHelpers<CarValues>
   ) => {
     try {
       const formData = new FormData();
@@ -97,11 +109,6 @@ export default function CarForm({ params }: { params?: { id: string } }) {
         });
       } else {
         console.log("No images selected!");
-      }
-
-      // Log FormData contents (for debugging purposes)
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
       }
 
       const token = Cookie.get("accessToken");
@@ -279,15 +286,13 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                 </div>
               </div>
 
-              <div className="mb-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </button>
             </Form>
           )}
         </Formik>
