@@ -77,25 +77,25 @@ export default function Dashboard() {
       </Link>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredCars.map((car) => (
-          <Link href={`/cars/${car.id}`} key={car.id} className="border dark:border-gray-600 rounded-lg p-4 shadow-md dark:bg-gray-900">
+          <Link href={`/cars/${car._id}`} key={car._id} className="border dark:border-gray-600 rounded-lg p-4 shadow-md dark:bg-gray-900">
             <h2 className="text-xl font-bold mb-2">{car.title}</h2>
             <p className="mb-2">{car.description}</p>
             <div className="mb-2">
               {car.tags && car.tags.length > 0
                 ? car.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
-                    >
-                      {tag.replace(/[\[\]"]/g, '')} {/* Removes unwanted characters */}
-                    </span>
-                  ))
+                  <span
+                    key={tag}
+                    className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
+                  >
+                    {tag.replace(/[\[\]"]/g, '')} {/* Removes unwanted characters */}
+                  </span>
+                ))
                 : 'No tags available'}
             </div>
             <p className="text-sm text-gray-500">
-              Owner: {car.owner?.username || 'Unknown'} {/* Display username */}
+              Owner: {car.user || 'Unknown'} {/* Display username */}
             </p>
-            <Link href={`/cars/${car.id}`}>
+            <Link href={`/cars/${car._id}`}>
               <button className="px-2 py-1 my-2 text-sm bg-slate-700 dark:bg-slate-300 dark:text-black text-white rounded-md hover:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
                 View Details
               </button>

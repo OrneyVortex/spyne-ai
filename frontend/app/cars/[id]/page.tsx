@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Cookie from 'js-cookie'; // Import the Cookie library
 
 export default function CarDetails({ params }: { params: { id: string } }) {
   interface Car {
