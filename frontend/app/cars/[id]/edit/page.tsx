@@ -45,10 +45,6 @@ export default function CarForm({ params }: { params?: { id: string } }) {
             description: data.description || "",
             images: data.images || [],
             tags: data.tags || [],
-            owner: {
-              name: data.owner.name || "",
-              email: data.owner.email || "",
-            },
           });
         } catch (error) {
           console.error("Error fetching car details:", error);
@@ -133,7 +129,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                         <div key={index} className="flex items-center mb-2">
                           <Field
                             name={`tags.${index}`}
-                            className="w-full px-3 py-2 border rounded-md"
+                            className="w-full px-3 py-2 border rounded-md text-black"
                             placeholder={tag} // Use backend data for placeholder
                           />
                           <button type="button" onClick={() => remove(index)} className="ml-2 bg-red-500 text-white px-2 py-2 rounded-md">Remove</button>
