@@ -14,12 +14,7 @@ const CarSchema = Yup.object().shape({
     .min(10, "Description must be at least 10 characters")
     .required("Required"),
   tags: Yup.array().of(Yup.string()).min(1, "At least one tag is required"),
-  owner: Yup.object().shape({
-    name: Yup.string().required("Owner name is required"),
-    email: Yup.string()
-      .email("Invalid email")
-      .required("Owner email is required"),
-  }),
+  
 });
 
 export default function CarForm({ params }: { params?: { id: string } }) {
@@ -28,10 +23,6 @@ export default function CarForm({ params }: { params?: { id: string } }) {
     description: "",
     images: [],
     tags: [],
-    owner: {
-      name: "",
-      email: ""
-    }
   });
   const router = useRouter();
 
@@ -49,7 +40,16 @@ export default function CarForm({ params }: { params?: { id: string } }) {
           if (!response.ok) throw new Error("Car not found");
 
           const data = await response.json();
-          setInitialValues(data);
+          setInitialValues({
+            title: data.title || "",
+            description: data.description || "",
+            images: data.images || [],
+            tags: data.tags || [],
+            owner: {
+              name: data.owner.name || "",
+              email: data.owner.email || "",
+            },
+          });
         } catch (error) {
           console.error("Error fetching car details:", error);
           router.push("/"); // Redirect to dashboard if car is not found
@@ -103,12 +103,25 @@ export default function CarForm({ params }: { params?: { id: string } }) {
             <Form className="max-w-lg">
               <div className="mb-4">
                 <label htmlFor="title" className="block mb-1">Title</label>
-                <Field type="text" id="title" name="title" className="w-full px-3 py-2 border rounded-md" />
+                <Field
+                  type="text"
+                  id="title"
+                  name="title"
+                  className="w-full px-3 py-2 border text-black rounded-md"
+                  placeholder={initialValues.title} // Use backend data for placeholder
+                />
                 <ErrorMessage name="title" component="div" className="text-red-500 text-xs mt-1" />
               </div>
               <div className="mb-4">
                 <label htmlFor="description" className="block mb-1">Description</label>
-                <Field as="textarea" id="description" name="description" rows={3} className="w-full px-3 py-2 border rounded-md" />
+                <Field
+                  as="textarea"
+                  id="description"
+                  name="description"
+                  rows={3}
+                  className="w-full text-black px-3 py-2 border rounded-md"
+                  placeholder={initialValues.description} // Use backend data for placeholder
+                />
                 <ErrorMessage name="description" component="div" className="text-red-500 text-xs mt-1" />
               </div>
               <div className="mb-4">
@@ -118,7 +131,11 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                     <div>
                       {values.tags && values.tags.length > 0 && values.tags.map((tag, index) => (
                         <div key={index} className="flex items-center mb-2">
-                          <Field name={`tags.${index}`} className="w-full px-3 py-2 border rounded-md" />
+                          <Field
+                            name={`tags.${index}`}
+                            className="w-full px-3 py-2 border rounded-md"
+                            placeholder={tag} // Use backend data for placeholder
+                          />
                           <button type="button" onClick={() => remove(index)} className="ml-2 bg-red-500 text-white px-2 py-2 rounded-md">Remove</button>
                         </div>
                       ))}
@@ -130,7 +147,14 @@ export default function CarForm({ params }: { params?: { id: string } }) {
               </div>
               <div className="mb-4">
                 <label htmlFor="images" className="block mb-1">Images</label>
-                <input type="file" id="images" accept="image/*" multiple onChange={(event) => handleImageUpload(event, setFieldValue)} className="w-full px-3 py-2 border rounded-md" />
+                <input
+                  type="file"
+                  id="images"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => handleImageUpload(event, setFieldValue)}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
               </div>
               <div className="mb-4">
                 {values.images.map((image, index) => (

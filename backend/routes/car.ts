@@ -54,7 +54,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
 
 
 // Get Car Details
-router.get("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get("/:_id", authMiddleware, async (req: AuthRequest, res: Response) => {
   const car = await Car.findOne({ _id: req.params.id, user: req.userId });
   if (!car) res.status(404).send("Car not found");
   res.send(car);

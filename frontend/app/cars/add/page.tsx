@@ -8,7 +8,6 @@ import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode"; // Import jwt-decode
 import { v4 as uuidv4 } from "uuid"; // For generating unique IDs
 
-// Update schema to exclude username
 const CarSchema = Yup.object().shape({
   title: Yup.string()
     .min(2, "Title must be at least 2 characters")
@@ -21,29 +20,27 @@ const CarSchema = Yup.object().shape({
 
 export default function CarForm({ params }: { params?: { id: string } }) {
   const [initialValues, setInitialValues] = useState<any>({
-    id: "", // Initially set to empty, we'll handle it based on the data fetched
+    id: "",
     title: "",
     description: "",
     tags: [],
     images: [],
   });
-  const [username, setUsername] = useState<string | null>(null); // State to hold the username
+  const [username, setUsername] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    // Extract username from the accessToken (JWT)
     const token = Cookie.get("accessToken");
     if (token) {
       try {
-        const decodedToken: any = jwtDecode(token); // Decode the JWT
-        setUsername(decodedToken.username || "anonymous"); // If no username, set it to "anonymous"
+        const decodedToken: any = jwtDecode(token);
+        setUsername(decodedToken.username || "anonymous");
       } catch (error) {
         console.error("Failed to decode token", error);
       }
     }
 
     if (params?.id) {
-      // Fetch data for editing an existing car
       const fetchCarData = async () => {
         try {
           const response = await fetch(
@@ -64,7 +61,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
           const carData = await response.json();
           setInitialValues({
             ...carData,
-            id: carData.id || uuidv4(), // If no ID exists in the response, generate one
+            id: carData.id || uuidv4(),
           });
         } catch (error) {
           console.error("Error fetching car data:", error);
@@ -73,7 +70,6 @@ export default function CarForm({ params }: { params?: { id: string } }) {
 
       fetchCarData();
     } else {
-      // For new car entries, generate a unique ID
       setInitialValues((prevValues) => ({
         ...prevValues,
         id: uuidv4(),
@@ -88,22 +84,24 @@ export default function CarForm({ params }: { params?: { id: string } }) {
     try {
       const formData = new FormData();
 
-      // Append normal fields
-      formData.append("id", values.id); // Include the ID in the form submission
+      formData.append("id", values.id);
       formData.append("title", values.title);
       formData.append("description", values.description);
-
-      // Include the decoded username or anonymous if not available
       formData.append("username", username || "anonymous");
-
-      // Append tags as a JSON string
       formData.append("tags", JSON.stringify(values.tags));
 
-      // Append images (files)
-      if (values.images) {
-        values.images.forEach((image: any) => {
+      // Check if images are selected and append each file to FormData
+      if (values.images && values.images.length > 0) {
+        values.images.forEach((image: File) => {
           formData.append("images", image);
         });
+      } else {
+        console.log("No images selected!");
+      }
+
+      // Log FormData contents (for debugging purposes)
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
       }
 
       const token = Cookie.get("accessToken");
@@ -141,10 +139,9 @@ export default function CarForm({ params }: { params?: { id: string } }) {
   ) => {
     const files = event.target.files;
     if (files) {
-      const newImages = Array.from(files).map((file) =>
-        URL.createObjectURL(file)
-      );
-      setFieldValue("images", [...initialValues.images, ...newImages]);
+      // Append each image to the Formik value
+      const fileArray = Array.from(files);
+      setFieldValue("images", [...initialValues.images, ...fileArray]);
     }
   };
 
@@ -162,10 +159,9 @@ export default function CarForm({ params }: { params?: { id: string } }) {
         >
           {({ isSubmitting, setFieldValue, values }) => (
             <Form className="max-w-lg">
-              {/* Car ID Field - Hidden */}
               <Field type="hidden" name="id" value={values.id} />
 
-              {/* Other Fields (Title, Description, Tags, etc.) */}
+              {/* Title and Description Fields */}
               <div className="mb-4">
                 <label htmlFor="title" className="block mb-1">
                   Title
@@ -182,6 +178,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   className="text-red-500 text-xs mt-1"
                 />
               </div>
+
               <div className="mb-4">
                 <label htmlFor="description" className="block mb-1">
                   Description
@@ -199,6 +196,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   className="text-red-500 text-xs mt-1"
                 />
               </div>
+
               <div className="mb-4">
                 <label htmlFor="tags" className="block mb-1">
                   Tags
@@ -240,6 +238,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   className="text-red-500 text-xs mt-1"
                 />
               </div>
+
               <div className="mb-4">
                 <label htmlFor="images" className="block mb-1">
                   Images
@@ -258,13 +257,33 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   component="div"
                   className="text-red-500 text-xs mt-1"
                 />
+
+                {/* Display uploaded images */}
+                <div className="mt-4">
+                  <h3 className="text-lg">Selected Images:</h3>
+                  <ul>
+                    {values.images && values.images.length > 0 ? (
+                      values.images.map((image, index) => (
+                        <li key={index}>
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={`image-${index}`}
+                            className="w-32 h-32 object-cover mt-2"
+                          />
+                        </li>
+                      ))
+                    ) : (
+                      <p>No images selected</p>
+                    )}
+                  </ul>
+                </div>
               </div>
 
-              <div className="flex justify-center">
+              <div className="mb-4">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-2 px-4 bg-black dark:bg-white dark:text-black text-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}
                 </button>
