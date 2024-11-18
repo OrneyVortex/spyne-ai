@@ -8,17 +8,18 @@ interface AuthRequest extends Request {
   userId?: string;
 }
 
-// Create Car
 router.post(
   "/",
   authMiddleware,
   upload.array("images", 10),
   async (req: AuthRequest, res: Response) => {
     try {
-      const { title, description, tags, username } = req.body; // Get username from request body
+      const { title, description, tags, username } = req.body;
       const images = req.files
         ? (req.files as Express.Multer.File[]).map((file) => file.path)
         : [];
+
+      console.log("Uploaded Images: ", images); // Log the image paths to confirm they are being returned
 
       const car = new Car({
         user: req.userId,
@@ -32,11 +33,12 @@ router.post(
       await car.save();
       res.status(201).json(car);
     } catch (error) {
-      console.log(error);
+      console.log("Error uploading car data:", error);
       res.status(500).json({ error: "Server error" });
     }
   }
 );
+
 
 // List Cars
 // List Cars

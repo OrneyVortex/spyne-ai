@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, Key } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
 import * as Yup from "yup";
 import Cookie from "js-cookie";
+import { jwtDecode } from "jwt-decode"; // Import jwt-decode
 import { v4 as uuidv4 } from "uuid"; // For generating unique IDs
 
+// Update schema to exclude username
 const CarSchema = Yup.object().shape({
   title: Yup.string()
     .min(2, "Title must be at least 2 characters")
@@ -25,19 +27,25 @@ export default function CarForm({ params }: { params?: { id: string } }) {
     tags: [],
     images: [],
   });
+  const [username, setUsername] = useState<string | null>(null); // State to hold the username
   const router = useRouter();
 
   useEffect(() => {
+    // Extract username from the accessToken (JWT)
+    const token = Cookie.get("accessToken");
+    if (token) {
+      try {
+        const decodedToken: any = jwtDecode(token); // Decode the JWT
+        setUsername(decodedToken.username || "anonymous"); // If no username, set it to "anonymous"
+      } catch (error) {
+        console.error("Failed to decode token", error);
+      }
+    }
+
     if (params?.id) {
       // Fetch data for editing an existing car
       const fetchCarData = async () => {
         try {
-          const token = Cookie.get("accessToken");
-          if (!token) {
-            console.error("No access token found");
-            return;
-          }
-
           const response = await fetch(
             `https://spyne-ai-backend-production.up.railway.app/api/cars/${params.id}`,
             {
@@ -54,8 +62,6 @@ export default function CarForm({ params }: { params?: { id: string } }) {
           }
 
           const carData = await response.json();
-
-          // Ensure the data includes an ID
           setInitialValues({
             ...carData,
             id: carData.id || uuidv4(), // If no ID exists in the response, generate one
@@ -68,7 +74,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
       fetchCarData();
     } else {
       // For new car entries, generate a unique ID
-      setInitialValues((prevValues: any) => ({
+      setInitialValues((prevValues) => ({
         ...prevValues,
         id: uuidv4(),
       }));
@@ -86,6 +92,9 @@ export default function CarForm({ params }: { params?: { id: string } }) {
       formData.append("id", values.id); // Include the ID in the form submission
       formData.append("title", values.title);
       formData.append("description", values.description);
+
+      // Include the decoded username or anonymous if not available
+      formData.append("username", username || "anonymous");
 
       // Append tags as a JSON string
       formData.append("tags", JSON.stringify(values.tags));
@@ -199,7 +208,7 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                   render={(arrayHelpers) => (
                     <div>
                       {values.tags && values.tags.length > 0
-                        ? values.tags.map((tag: any, index: number) => (
+                        ? values.tags.map((tag, index) => (
                             <div key={index} className="flex items-center mb-2">
                               <Field
                                 name={`tags.${index}`}
@@ -238,29 +247,26 @@ export default function CarForm({ params }: { params?: { id: string } }) {
                 <input
                   type="file"
                   id="images"
+                  name="images"
                   accept="image/*"
                   multiple
                   onChange={(event) => handleImageUpload(event, setFieldValue)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:border-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="block w-full text-sm text-gray-500 dark:text-gray-300"
+                />
+                <ErrorMessage
+                  name="images"
+                  component="div"
+                  className="text-red-500 text-xs mt-1"
                 />
               </div>
-              <div className="mb-4">
-                {values.images.map((image: string | undefined, index: Key | null | undefined) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`Car image ${(index as number) + 1}`}
-                    className="w-24 h-24 object-cover rounded mr-2 mb-2 inline-block"
-                  />
-                ))}
-              </div>
-              <div className="flex justify-end">
+
+              <div className="flex justify-center">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className="w-full py-2 px-4 bg-black dark:bg-white dark:text-black text-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
-                  {isSubmitting ? "Submitting..." : params?.id ? "Update" : "Submit"}
+                  {isSubmitting ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </Form>
